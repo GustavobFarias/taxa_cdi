@@ -11,30 +11,38 @@ import requests
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-URL = 'https://api.bcb.gov.br/dados/serie/bcdata.sgs.4392/dados'
+URL = 'https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json'
 
 # Captando a taxa CDI do site do BCB
 def extrair_taxa_cdi():
-    print("Tentando extrair taxa CDI...")
     try:
+        print("Tentando extrair taxa CDI...")
         response = requests.get(url=URL)
         response.raise_for_status()
-    except requests.HTTPError:
-        print("Dado não encontrado, continuando.")
-        return None
-    except Exception as exc:
-        print("Erro, parando a execução.")
-        raise exc
-    else:
-        dado = json.loads(response.text)[-1]['valor']
+        dados = json.loads(response.text)
+        if not dados:
+            print("Nenhum dado encontrado.")
+            return None
+        
+        dado = dados[-1]['valor']
         print(f"Taxa CDI extraída: {dado}")
         return dado
+    except requests.HTTPError as exc:
+        print("Erro HTTP ao acessar a API", exc)
+        return None
+    except Exception as exc:
+        print("Erro inesperado", exc)
+        return None
 
 # Criando a variável data e hora e salvando no CSV
 def gerar_csv():
     print("Iniciando geração do CSV...")
     dado = extrair_taxa_cdi()
     
+    if dado is None:
+        print("Não foi possível extrair a taxa CDI.")
+        return
+
     # Usando a pasta do usuário
     arquivo_csv = os.path.join(os.path.expanduser('~'), 'taxa_cdi.csv')
     print(f"Arquivo CSV será salvo em: {arquivo_csv}")
